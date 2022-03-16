@@ -1,0 +1,23 @@
+{
+  "name": "02-movies-project",
+  "version": "0.0.1",
+  "description": "AppMovies",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "startDev": "nodemon app.js "
+  },
+  "keywords": [
+    "movies"
+  ],
+  "author": "Alberto Mendez Blanco",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.17.3",
+    "sequelize": "^6.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
