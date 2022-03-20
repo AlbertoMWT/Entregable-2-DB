@@ -18,7 +18,8 @@ const Reviews = sequelize.define('review', {
     },
     rating: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        defaultValue: 1,
     },
     userId: {
         type: DataTypes.INTEGER,
@@ -27,6 +28,11 @@ const Reviews = sequelize.define('review', {
     movieId: {
         type: DataTypes.STRING(100),
         allowNull: false
+    },
+    status: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+        defaultValue: 'active'
     }
 })
 
