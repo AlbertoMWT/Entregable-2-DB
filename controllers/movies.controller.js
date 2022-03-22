@@ -1,4 +1,8 @@
+
+//Models
 const { Movies } = require('../models/movies.model');
+
+//Utils
 const { catchAsync } = require('../util/catchAsync');
 const { AppError } = require('../util/appError');
 const { filterObj } = require('../util/filterObj');

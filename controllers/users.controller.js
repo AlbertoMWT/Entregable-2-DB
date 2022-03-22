@@ -1,4 +1,8 @@
+const bcrypt = require('bcryptjs')
+
+//Models
 const { Users } = require('../models/users.model');
+//Utils
 const { catchAsync } = require('../util/catchAsync');
 const { filterObj } = require('../util/filterObj');
 
@@ -55,11 +59,17 @@ exports.createNewUser = catchAsync(
             );
         }
 
+        const salt = await bcrypt.genSalt(12);
+
+        const hashedPass = await bcrypt.hash(password, salt)
+
         const user = await Users.create({
             username,
             email,
-            password,        
+            password: hashedPass     
         });
+
+        password = undefined
 
         res.status(200).json({
             status: 'success',

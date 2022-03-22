@@ -20,5 +20,5 @@ router.patch('/:id', updateReview);
 router.delete('/:id', deleteReview);
 
 module.exports = {
-    routerReviews: router
+    reviewsRouter: router
 };
