@@ -1,10 +1,14 @@
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv')
 
 //Models
 const { Users } = require('../models/users.model');
 //Utils
 const { catchAsync } = require('../util/catchAsync');
 const { filterObj } = require('../util/filterObj');
+
+dotenv.config({ path: '/config.env' })
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
     const Users = await Users.findAll({
@@ -22,20 +26,7 @@ exports.getAllUsers = catchAsync(async (req, res, next) => {
 });
 
 exports.getUserById = catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-
-    const user = await Users.findOne({
-        where: {
-            id,
-            status: 'active'
-        }
-    });
-
-    if (!user) {
-        return next(
-            new AppError(404, 'user not found, invalid Id')
-        );
-    }
+    const { user } = req;
 
     res.status(200).json({
         status: 'success',
@@ -47,8 +38,7 @@ exports.getUserById = catchAsync(async (req, res, next) => {
 
 exports.createNewUser = catchAsync(
     async (req, res, next) => {
-        const { username, email, password } =
-            req.body;
+        const { username, email, password, role } = req.body;
 
         if (!username || !email || !password) {
             return next(
@@ -61,72 +51,53 @@ exports.createNewUser = catchAsync(
 
         const salt = await bcrypt.genSalt(12);
 
-        const hashedPass = await bcrypt.hash(password, salt)
+        const hashedPass = await bcrypt.hash(
+            password,
+            salt
+        );
 
         const user = await Users.create({
             username,
             email,
-            password: hashedPass     
+            password: hashedPass,
+            role
         });
 
-        password = undefined
+        password = undefined;
 
         res.status(200).json({
             status: 'success',
             data: {
                 user
-            },
+            }
         });
     }
 );
 
 exports.updateUser = catchAsync(async (req, res, next) => {
-    const { id } = req.params;
+
+    const {user} = req
+
     const data = filterObj(
         req.body,
         'username',
         'email',
-        'password',
+        'password'
     );
 
-    const patch = await Users.findOne({
-        where: {
-            id,
-            status: 'active'
-        }
-    });
-
-    if (!patch) {
-        return next(
-            new AppError(404, 'user not found, invalid Id')
-        );
-    }
-
-    await patch.update({ ...data });
+    await user.update({ ...data });
 
     res.status(200).json({
         status: 'success',
         data: {
-            patch
+            user
         }
     });
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-
-    const user = await Users.findOne({
-        where: {
-            id,
-            status: 'active'
-        }
-    });
-
-    if (!user) {
-        return next(
-            new AppError(400, 'user not found, invalid Id')
-        );
-    }
+    
+    const{user} = req;
 
     await user.update({
         status: 'disable'
@@ -137,3 +108,37 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
         message: 'user deleted'
     });
 });
+
+exports.loginUser = catchAsync(
+    async (req, res, next) => {
+
+        const {email, password} = req.body;
+
+        const user = await Users.findOne({
+            where:{
+                email,
+                status: 'active'
+            }
+        });
+
+        if(!user || !(await bcrypt.compare(password, user.password))){
+            return next(new AppError(404, 'Credential are invalids'))
+        };
+
+        const token = await jwt.sign(
+            {id: user.id},
+            process.env.JWT_SECRET,
+            {
+                expiresIn: process.env.JWT_EXPIRES_IN
+            }
+        );
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                token
+            }
+        })
+
+    }
+);

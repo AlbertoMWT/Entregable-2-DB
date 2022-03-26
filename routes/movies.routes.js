@@ -10,17 +10,17 @@ const {
 
 const router = express.Router();
 
-router.get('/', getAllMovies);
+router
+    .route('/')
+    .get(getAllMovies)
+    .post(createNewMovie);
 
-router.get('/:id', getMovieById);
-
-router.post('/', createNewMovie)
-
-router.patch('/:id', updateMovie);
-
-router.delete('/:id', deleteMovie);
-
+router
+    .route('/:id')
+    .get(getMovieById)
+    .patch(updateMovie)
+    .delete(deleteMovie);
 
 module.exports = {
-    moviesRouter : router
-}
+    moviesRouter: router
+};

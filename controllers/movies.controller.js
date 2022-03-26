@@ -61,8 +61,11 @@ exports.createNewMovie = catchAsync(
             duration,
             rating,
             imgUrl,
-            genre
+            genre,
+            actors
         } = req.body;
+
+        //actors = [1,2,3,4]
 
         if (!title || !description || !imgUrl || !genre) {
             return next(
@@ -81,6 +84,12 @@ exports.createNewMovie = catchAsync(
             imgUrl,
             genre
         });
+
+        const actorsInMoviePromises = actors.map( async(actorId) => {
+            return await ActorsInMovie.create({ actorId, movieId: movie.id})
+        })
+
+        await Promise.all(actorsInMoviePromises)
 
         res.status(200).json({
             status: 'success',
@@ -152,3 +161,4 @@ exports.deleteMovie = catchAsync(
 
     }
 )
+

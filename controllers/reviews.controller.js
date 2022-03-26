@@ -1,5 +1,7 @@
 
 const { Reviews } = require("../models/reviews.model");
+const { catchAsync } = require("../util/catchAsync");
+
 
 
 exports.getAllReviews = catchAsync(
