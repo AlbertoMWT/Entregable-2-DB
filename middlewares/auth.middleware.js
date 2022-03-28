@@ -1,13 +1,12 @@
-const dotenv = require('dotenv');
-const { Users } = require('../models/users.model');
 const jwt = require('jsonwebtoken');
 const { promisify } = require('util');
 
-//Utils
+// Models
+const { User } = require('../models/user.model');
+
+// Utils
 const { AppError } = require('../util/appError');
 const { catchAsync } = require('../util/catchAsync');
-
-dotenv.config({ path: './config.env' });
 
 exports.validateSession = catchAsync(
     async (req, res, next) => {
@@ -19,9 +18,10 @@ exports.validateSession = catchAsync(
         ) {
             token = req.headers.authorization.split(' ')[1];
         }
+
         if (!token) {
             return next(
-                new AppError(400, 'invalid session')
+                new AppError(401, 'Invalid session')
             );
         }
 
@@ -30,40 +30,29 @@ exports.validateSession = catchAsync(
             process.env.JWT_SECRET
         );
 
-        const user = await Users.findOne({
-            where: {
-                id: decodedToken.id,
-                status: 'active'
-            },
-            attributes: {
-                exclude: ['password']
-            }
+        const user = await User.findOne({
+            attributes: { exclude: ['password'] },
+            where: { id: decodedToken.id, status: 'active' }
         });
 
         if (!user) {
             return next(
-                new AppError(
-                    401,
-                    'This user is no longer available'
-                )
+                new AppError(401, 'Invalid session')
             );
         }
 
         req.currentUser = user;
-
         next();
     }
 );
 
 exports.protectAdmin = catchAsync(
     async (req, res, next) => {
-
-        if(req.currentUser.role !== 'admin'){
-            return next(new AppError(403, 'access denied'))
+        if (req.currentUser.role !== 'admin') {
+            return next(new AppError(403, 'Access denied'));
         }
 
-        
-
+        // Grant access
         next();
     }
 );

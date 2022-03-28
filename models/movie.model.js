@@ -1,20 +1,19 @@
 const { DataTypes } = require('sequelize');
-
 const { sequelize } = require('../util/dataBase');
 
-const Movies = sequelize.define('movie', {
+const Movie = sequelize.define('movie', {
     id: {
         primaryKey: true,
-        type: DataTypes.STRING,
-        allowNull: false,
-        autoIncrement: true
+        autoIncrement: true,
+        type: DataTypes.INTEGER,
+        allowNull: false
     },
     title: {
         type: DataTypes.STRING(100),
         allowNull: false
     },
     description: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(100),
         allowNull: false
     },
     duration: {
@@ -27,12 +26,12 @@ const Movies = sequelize.define('movie', {
         allowNull: false,
         defaultValue: 1
     },
-    imgUrl: {
+    img: {
         type: DataTypes.STRING(255),
         allowNull: false
     },
     genre: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING(50),
         allowNull: false
     },
     status: {
@@ -42,6 +41,4 @@ const Movies = sequelize.define('movie', {
     }
 });
 
-module.exports = {
-    Movies
-};
+module.exports = { Movie };

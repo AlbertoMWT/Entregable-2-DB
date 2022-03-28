@@ -1,14 +1,16 @@
 const express = require('express');
+
+// Controllers
 const {
     getAllUsers,
     getUserById,
-    createNewUser,
+    createUser,
     updateUser,
     deleteUser,
     loginUser
 } = require('../controllers/users.controller');
 
-//middlewares
+// Middlewares
 const {
     validateSession,
     protectAdmin
@@ -20,14 +22,14 @@ const {
 
 const router = express.Router();
 
-router.post('/', createNewUser);
-router.post('/', loginUser);
+router.post('/', createUser);
+
+router.post('/login', loginUser);
 
 router.use(validateSession);
 
 router.get('/', protectAdmin, getAllUsers);
 
-router.use('/:id', userExists);
 router
     .use('/:id', userExists)
     .route('/:id')
@@ -35,8 +37,4 @@ router
     .patch(protectAccountOwner, updateUser)
     .delete(protectAccountOwner, deleteUser);
 
-
-
-module.exports = {
-    usersRouter: router
-};
+module.exports = { usersRouter: router };

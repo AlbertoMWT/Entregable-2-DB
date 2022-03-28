@@ -1,27 +1,59 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken')
-const dotenv = require('dotenv')
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 
-//Models
-const { Users } = require('../models/users.model');
-//Utils
+// Models
+const { User } = require('../models/user.model');
+
+// Utils
 const { catchAsync } = require('../util/catchAsync');
+const { AppError } = require('../util/appError');
 const { filterObj } = require('../util/filterObj');
 
-dotenv.config({ path: '/config.env' })
+dotenv.config({ path: './config.env' });
+
+exports.loginUser = catchAsync(async (req, res, next) => {
+    const { email, password } = req.body;
+
+    // Find user given an email and has status active
+    const user = await User.findOne({
+        where: { email, status: 'active' }
+    });
+
+    // Compare entered password vs hashed password
+    if (
+        !user ||
+        !(await bcrypt.compare(password, user.password))
+    ) {
+        return next(
+            new AppError(400, 'Credentials are invalid')
+        );
+    }
+
+    // Create JWT
+    const token = await jwt.sign(
+        { id: user.id }, // Token payload
+        process.env.JWT_SECRET, // Secret key
+        {
+            expiresIn: process.env.JWT_EXPIRES_IN
+        }
+    );
+
+    res.status(200).json({
+        status: 'success',
+        data: { token }
+    });
+});
 
 exports.getAllUsers = catchAsync(async (req, res, next) => {
-    const Users = await Users.findAll({
-        where: {
-            status: 'active'
-        }
+    const users = await User.findAll({
+        attributes: { exclude: ['password'] },
+        where: { status: 'active' }
     });
 
     res.status(200).json({
         status: 'success',
-        data: {
-            Users
-        }
+        data: { users }
     });
 });
 
@@ -30,115 +62,49 @@ exports.getUserById = catchAsync(async (req, res, next) => {
 
     res.status(200).json({
         status: 'success',
-        data: {
-            user
-        }
+        data: { user }
     });
 });
 
-exports.createNewUser = catchAsync(
-    async (req, res, next) => {
-        const { username, email, password, role } = req.body;
+exports.createUser = catchAsync(async (req, res, next) => {
+    const { username, email, password, status, role } = req.body;
 
-        if (!username || !email || !password) {
-            return next(
-                new AppError(
-                    400,
-                    'You must provide the required information'
-                )
-            );
-        }
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(
+        password,
+        salt
+    );
 
-        const salt = await bcrypt.genSalt(12);
+    const newUser = await User.create({
+        username,
+        email,
+        password: hashedPassword,
+        status,
+        role
+    });
 
-        const hashedPass = await bcrypt.hash(
-            password,
-            salt
-        );
+    newUser.password = undefined;
 
-        const user = await Users.create({
-            username,
-            email,
-            password: hashedPass,
-            role
-        });
-
-        password = undefined;
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                user
-            }
-        });
-    }
-);
+    res.status(201).json({
+        status: 'success',
+        data: { newUser }
+    });
+});
 
 exports.updateUser = catchAsync(async (req, res, next) => {
+    const { user } = req;
 
-    const {user} = req
-
-    const data = filterObj(
-        req.body,
-        'username',
-        'email',
-        'password'
-    );
+    const data = filterObj(req.body, 'username', 'email');
 
     await user.update({ ...data });
 
-    res.status(200).json({
-        status: 'success',
-        data: {
-            user
-        }
-    });
+    res.status(204).json({ status: 'success' });
 });
 
 exports.deleteUser = catchAsync(async (req, res, next) => {
-    
-    const{user} = req;
+    const { user } = req;
 
-    await user.update({
-        status: 'disable'
-    });
+    await user.update({ status: 'deleted' });
 
-    res.status(200).json({
-        status: 'success',
-        message: 'user deleted'
-    });
+    res.status(204).json({ status: 'success' });
 });
-
-exports.loginUser = catchAsync(
-    async (req, res, next) => {
-
-        const {email, password} = req.body;
-
-        const user = await Users.findOne({
-            where:{
-                email,
-                status: 'active'
-            }
-        });
-
-        if(!user || !(await bcrypt.compare(password, user.password))){
-            return next(new AppError(404, 'Credential are invalids'))
-        };
-
-        const token = await jwt.sign(
-            {id: user.id},
-            process.env.JWT_SECRET,
-            {
-                expiresIn: process.env.JWT_EXPIRES_IN
-            }
-        );
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                token
-            }
-        })
-
-    }
-);

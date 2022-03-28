@@ -1,23 +1,24 @@
-const { Users } = require('../models/users.model');
+// Models
+const { User } = require('../models/user.model');
+
+// Utils
 const { AppError } = require('../util/appError');
 const { catchAsync } = require('../util/catchAsync');
 
 exports.userExists = catchAsync(async (req, res, next) => {
     const { id } = req.params;
 
-    const user = await Users.findOne({
-        where: {
-            id,
-            status: 'active'
-        },
-        attributes: {
-            exclude: ['password']
-        }
+    const user = await User.findOne({
+        attributes: { exclude: ['password'] },
+        where: { id, status: 'active' }
     });
 
     if (!user) {
         return next(
-            new AppError(404, 'user not found, invalid Id')
+            new AppError(
+                404,
+                'User not found with given id'
+            )
         );
     }
 
@@ -28,11 +29,15 @@ exports.userExists = catchAsync(async (req, res, next) => {
 exports.protectAccountOwner = catchAsync(
     async (req, res, next) => {
         const { id } = req.params;
+        const { currentUser } = req;
 
-        const {currentUser} = req;
-
-        if(currentUser.id !== +id){
-            return next ( new AppError(403, `you can't update other users accounts`));
+        if (currentUser.id !== +id) {
+            return next(
+                new AppError(
+                    403,
+                    `You can't update other users accounts`
+                )
+            );
         }
 
         next();

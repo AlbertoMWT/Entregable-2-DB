@@ -1,113 +1,114 @@
-const { Actors } = require("../models/actors.model")
-const { AppError } = require("../util/appError")
-const { catchAsync } = require('../util/catchAsync')
+const {
+    ref,
+    uploadBytes,
+    getDownloadURL
+} = require('firebase/storage');
+const { validationResult } = require('express-validator');
 
+// Models
+const { Actor } = require('../models/actor.model');
+const {
+    ActorInMovie
+} = require('../models/actorInMovie.model');
 
+// Utils
+const { catchAsync } = require('../util/catchAsync');
+const { AppError } = require('../util/appError');
+const { filterObj } = require('../util/filterObj');
+const { storage } = require('../util/firebase');
+const { Movie } = require('../models/movie.model');
 
-exports.getAllActors = catchAsync(async(req, res, next) => {
+exports.getAllActors = catchAsync(
+    async (req, res, next) => {
+        const actors = await Actor.findAll({
+            where: { status: 'active' },
+            include: [
+                { model: Movie, through: ActorInMovie }
+            ]
+        });
 
-    const actors = await Actors.findAll({
-        where: {
-            status: 'active'
-        }
-    })
+        res.status(200).json({
+            status: 'success',
+            data: { actors }
+        });
+    }
+);
 
-    if(!actors){
-        return next(new AppError(404, 'Actors not found'))
+exports.getActorById = catchAsync(
+    async (req, res, next) => {
+        const { actor } = req;
+
+        res.status(200).json({
+            status: 'success',
+            data: { actor }
+        });
+    }
+);
+
+exports.createActor = catchAsync(async (req, res, next) => {
+    const { name, country, rating, age } = req.body;
+
+    // Validate req.body
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+        // [msg, msg, msg, msg] -> msg. msg. msg...
+        const errorMsg = errors
+            .array()
+            .map(({ msg }) => msg)
+            .join('. ');
+
+        return next(new AppError(400, errorMsg));
     }
 
-    res.status(200).json({
-        status: 'success',
-        data: {
-            actors
-        }
-    })
+    // Upload img to firebase
+    const fileExtension =
+        req.file.originalname.split('.')[1];
 
-})
+    const imgRef = ref(
+        storage,
+        `imgs/actors/${name}-${Date.now()}.${fileExtension}`
+    );
 
-exports.createNewActor = catchAsync(async(req, res, next) => {
+    const imgUploaded = await uploadBytes(
+        imgRef,
+        req.file.buffer
+    );
 
-    const {
-        name, 
-        country, 
-        oscarPriezes, 
-        raiting,
-        age,
-    } = req.body
-
-    if( !name || !country || !age){
-        return next(new AppError(400, 'Must provide information'))
-    }
-
-    const actor = await Actors.create({
+    const newActor = await Actor.create({
         name,
         country,
-        oscarPriezes,
-        raiting,
-        age
-    })
-
-    res.status(201).json({
-        status: 'succes',
-        data: {
-            actor
-        }
+        rating,
+        age,
+        profilePic: imgUploaded.metadata.fullPath
     });
-
-
-})
-
-exports.updateActor = catchAsync(async(req, res, next) => {
-
-    const {id} = req.params
-    const {country, age} = req.body
-
-    const actor = await Actors.findOne({
-        where:{
-            id,
-            status: 'active'
-        }
-    })
-
-    if(!actor){
-        return next(new AppError(404, 'Id not valid'))
-    }
-
-    await actor.update({
-        country,
-        age
-    })
 
     res.status(200).json({
         status: 'success',
-        data:{
-            actor
-        }
-    })
-
-})
-
-exports.deleteActor = catchAsync(async(req, res, next) => {
-    const {id} = req.params
-    
-    const actor = await Actors.findOne({
-        where:{
-            id,
-            status:'active'
-        }
+        data: { newActor }
     });
+});
 
-    if(!actor){
-        return next(new AppError(404, 'Id not valid'))
-    }
+exports.updateActor = catchAsync(async (req, res, next) => {
+    const { actor } = req;
 
-    await actor.update({
-        status: 'disable'
-    })
+    const data = filterObj(
+        req.body,
+        'name',
+        'country',
+        'rating',
+        'age'
+    );
 
-    res.status(200).json({
-        status: 'success',
-        message: 'actor deleted'
-    })
+    await actor.update({ ...data });
 
-})
+    res.status(204).json({ status: 'success' });
+});
+
+exports.deleteActor = catchAsync(async (req, res, next) => {
+    const { actor } = req;
+
+    await actor.update({ status: 'deleted' });
+
+    res.status(204).json({ status: 'success' });
+});
