@@ -1,9 +1,4 @@
-const {
-    ref,
-    uploadBytes,
-    getDownloadURL
-} = require('firebase/storage');
-const { validationResult } = require('express-validator');
+const { ref, uploadBytes } = require('firebase/storage');
 
 // Models
 const { Movie } = require('../models/movie.model');
@@ -14,9 +9,9 @@ const {
 
 // Utils
 const { catchAsync } = require('../util/catchAsync');
-const { AppError } = require('../util/appError');
 const { filterObj } = require('../util/filterObj');
 const { storage } = require('../util/firebase');
+const { Email } = require('../util/email');
 
 exports.getAllMovies = catchAsync(
     async (req, res, next) => {
@@ -53,16 +48,6 @@ exports.createMovie = catchAsync(async (req, res, next) => {
         actors
     } = req.body;
 
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-        const errorMsg = errors
-            .array()
-            .map(({ msg }) => msg)
-            .join('. ');
-        return next(new AppError(400, errorMsg));
-    }
-
     // Upload img to firebase
     const fileExtension =
         req.file.originalname.split('.')[1];
@@ -98,9 +83,24 @@ exports.createMovie = catchAsync(async (req, res, next) => {
 
     await Promise.all(actorsInMoviesPromises);
 
+    //Get actors for email
+    const movieActors = await Actor.findAll({
+        include: [{ 
+            model: Movie, 
+            through: { 
+                where: {movieId: newMovie.id} 
+            } 
+        }]
+    });
+
+    //!In a real app, we get the subscribe emails of our app and send to those emails
+    new Email('allberto.mendez@hotmail.com').sendNewMovie(
+        newMovie, movieActors
+    );
+
     res.status(200).json({
         status: 'success',
-        data: { newMovie }
+        data: { newMovie, movieActors }
     });
 });
 
