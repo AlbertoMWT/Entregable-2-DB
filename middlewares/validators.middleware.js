@@ -1,5 +1,7 @@
-const { body } = require('express-validator');
+const { body, validationResult } = require('express-validator');
+const { AppError } = require('../util/appError');
 const { catchAsync } = require('../util/catchAsync');
+
 
 exports.createMovieValidator = [
     body('title')
