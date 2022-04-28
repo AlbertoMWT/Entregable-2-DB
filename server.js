@@ -2,14 +2,14 @@ const { app } = require('./app');
 
 //Utils
 const { sequelize } = require('./util/dataBase');
-const { initModel } = require('./util/initModels');
+const { initModels } = require('./util/initModels');
 
 sequelize
     .authenticate()
     .then(() => console.log('database authenticated'))
     .catch((err) => console.log(err));
 
-initModel();
+initModels();
 
 sequelize
     .sync(        )

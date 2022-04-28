@@ -8,7 +8,7 @@ dotenv.config({ path: './config.env' });
 class Email {
   constructor(emails) {
     this.emails = emails;
-    this.from = `Alberto Méndez <${process.env.EMAIL_FROM}>`;
+    this.from = `Max Rangel <${process.env.EMAIL_FROM}>`;
   }
 
   newTransport() {

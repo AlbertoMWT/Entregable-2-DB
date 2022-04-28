@@ -2,22 +2,22 @@ const express = require('express');
 
 // Controllers
 const {
-    getAllUsers,
-    getUserById,
-    createUser,
-    updateUser,
-    deleteUser,
-    loginUser
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  loginUser
 } = require('../controllers/users.controller');
 
 // Middlewares
 const {
-    validateSession,
-    protectAdmin
+  validateSession,
+  protectAdmin
 } = require('../middlewares/auth.middleware');
 const {
-    userExists,
-    protectAccountOwner
+  userExists,
+  protectAccountOwner
 } = require('../middlewares/users.middleware');
 
 const router = express.Router();
@@ -31,10 +31,10 @@ router.use(validateSession);
 router.get('/', protectAdmin, getAllUsers);
 
 router
-    .use('/:id', userExists)
-    .route('/:id')
-    .get(getUserById)
-    .patch(protectAccountOwner, updateUser)
-    .delete(protectAccountOwner, deleteUser);
+  .use('/:id', userExists)
+  .route('/:id')
+  .get(getUserById)
+  .patch(protectAccountOwner, updateUser)
+  .delete(protectAccountOwner, deleteUser);
 
 module.exports = { usersRouter: router };
